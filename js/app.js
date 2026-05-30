@@ -3,17 +3,17 @@
    ============================================================ */
 
 // ── State ────────────────────────────────────────────────────
-let months   = JSON.parse(localStorage.getItem('lp_months'))   || JSON.parse(JSON.stringify(DEFAULT_MONTHS));
-let budget   = JSON.parse(localStorage.getItem('lp_budget'))   || JSON.parse(JSON.stringify(DEFAULT_BUDGET_SECTIONS));
-let goals    = JSON.parse(localStorage.getItem('lp_goals'))    || JSON.parse(JSON.stringify(DEFAULT_GOALS));
-let savings  = JSON.parse(localStorage.getItem('lp_savings'))  || { current: 0, log: [], goal: SAVINGS_GOAL };
+let months   = JSON.parse(localStorage.getItem('paris_months'))   || JSON.parse(JSON.stringify(DEFAULT_MONTHS));
+let budget   = JSON.parse(localStorage.getItem('paris_budget'))   || JSON.parse(JSON.stringify(DEFAULT_BUDGET_SECTIONS));
+let goals    = JSON.parse(localStorage.getItem('paris_goals'))    || JSON.parse(JSON.stringify(DEFAULT_GOALS));
+let savings  = JSON.parse(localStorage.getItem('paris_savings'))  || { current: 0, log: [], goal: SAVINGS_GOAL };
 
 // ── Persist ──────────────────────────────────────────────────
 function persist() {
-  localStorage.setItem('lp_months',  JSON.stringify(months));
-  localStorage.setItem('lp_budget',  JSON.stringify(budget));
-  localStorage.setItem('lp_goals',   JSON.stringify(goals));
-  localStorage.setItem('lp_savings', JSON.stringify(savings));
+  localStorage.setItem('paris_months',  JSON.stringify(months));
+  localStorage.setItem('paris_budget',  JSON.stringify(budget));
+  localStorage.setItem('paris_goals',   JSON.stringify(goals));
+  localStorage.setItem('paris_savings', JSON.stringify(savings));
 }
 
 function saveAll() {

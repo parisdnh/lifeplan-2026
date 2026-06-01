@@ -6,14 +6,29 @@
 function loadOrDefault(key, fallback) {
   try {
     const val = JSON.parse(localStorage.getItem(key));
-    return (Array.isArray(val) ? val.length > 0 : val != null) ? val : JSON.parse(JSON.stringify(fallback));
+    if (!Array.isArray(val) || val.length === 0) return JSON.parse(JSON.stringify(fallback));
+    return val;
   } catch { return JSON.parse(JSON.stringify(fallback)); }
 }
 
-let months   = loadOrDefault('paris_months',  DEFAULT_MONTHS);
-let budget   = loadOrDefault('paris_budget',  DEFAULT_BUDGET_SECTIONS);
-let goals    = loadOrDefault('paris_goals',   DEFAULT_GOALS);
-let savings  = loadOrDefault('paris_savings', { current: 0, log: [], goal: SAVINGS_GOAL });
+function loadBudget() {
+  try {
+    const val = JSON.parse(localStorage.getItem('paris_budget'));
+    if (Array.isArray(val) && val.length > 0 && val.every(s => s.title && Array.isArray(s.rows))) return val;
+  } catch {}
+  localStorage.removeItem('paris_budget');
+  return JSON.parse(JSON.stringify(DEFAULT_BUDGET_SECTIONS));
+}
+
+let months   = loadOrDefault('paris_months', DEFAULT_MONTHS);
+let budget   = loadBudget();
+let goals    = loadOrDefault('paris_goals',  DEFAULT_GOALS);
+let savings  = (() => {
+  try {
+    const s = JSON.parse(localStorage.getItem('paris_savings'));
+    return (s && typeof s.current === 'number') ? s : { current: 0, log: [], goal: SAVINGS_GOAL };
+  } catch { return { current: 0, log: [], goal: SAVINGS_GOAL }; }
+})();
 
 // ── Persist ──────────────────────────────────────────────────
 function persist() {
@@ -270,9 +285,20 @@ function saveField(mi, field, elId) {
 }
 
 // ── Budget ───────────────────────────────────────────────────
+function resetBudget() {
+  budget = JSON.parse(JSON.stringify(DEFAULT_BUDGET_SECTIONS));
+  localStorage.removeItem('paris_budget');
+  buildBudget();
+  showToast('Budsjett tilbakestilt til standard 🌸');
+}
+
 function buildBudget() {
+  if (!Array.isArray(budget) || budget.length === 0 || !budget.every(s => Array.isArray(s.rows))) {
+    budget = JSON.parse(JSON.stringify(DEFAULT_BUDGET_SECTIONS));
+    localStorage.removeItem('paris_budget');
+  }
   let totalB = 0, totalS = 0;
-  budget.forEach(sec => sec.rows.forEach(r => { totalB += r.budget; totalS += r.spent; }));
+  budget.forEach(sec => sec.rows.forEach(r => { totalB += (r.budget || 0); totalS += (r.spent || 0); }));
   const left = totalB - totalS;
 
   document.getElementById('budget-metrics').innerHTML = `

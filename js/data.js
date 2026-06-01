@@ -226,5 +226,19 @@ const DEFAULT_GOALS = [
   },
 ];
 
+const DEFAULT_SPAREPLAN_PRE = [
+  { month: 'Juni 2026',   planned: 2000,  actual: 0 },
+  { month: 'Juli 2026',   planned: 9000,  actual: 0 },
+  { month: 'August 2026', planned: 15000, actual: 0 },
+];
+
+const DEFAULT_SPAREPLAN_POST = [
+  { month: 'September 2026', income: 0, expenses: 0 },
+  { month: 'Oktober 2026',   income: 0, expenses: 0 },
+  { month: 'November 2026',  income: 0, expenses: 0 },
+  { month: 'Desember 2026',  income: 0, expenses: 0 },
+  { month: 'Januar 2027',    income: 0, expenses: 0 },
+];
+
 const SAVINGS_GOAL = 25000;
 const DEPARTURE_DATE = new Date('2026-09-01');

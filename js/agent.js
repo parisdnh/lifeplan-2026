@@ -315,7 +315,7 @@ function applyPlanUpdate(update) {
     buildTimeline();
     buildBudget();
     buildGoals();
-    buildSavings();
+    buildSpareplan();
     showToast('Plan oppdatert! ✨');
   }
 }

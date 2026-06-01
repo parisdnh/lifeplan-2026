@@ -29,6 +29,8 @@ let savings  = (() => {
     return (s && typeof s.current === 'number') ? s : { current: 0, log: [], goal: SAVINGS_GOAL };
   } catch { return { current: 0, log: [], goal: SAVINGS_GOAL }; }
 })();
+let spareplanPre  = loadOrDefault('paris_sp_pre',  DEFAULT_SPAREPLAN_PRE);
+let spareplanPost = loadOrDefault('paris_sp_post', DEFAULT_SPAREPLAN_POST);
 
 // ── Persist ──────────────────────────────────────────────────
 function persist() {
@@ -36,6 +38,8 @@ function persist() {
   localStorage.setItem('paris_budget',  JSON.stringify(budget));
   localStorage.setItem('paris_goals',   JSON.stringify(goals));
   localStorage.setItem('paris_savings', JSON.stringify(savings));
+  localStorage.setItem('paris_sp_pre',  JSON.stringify(spareplanPre));
+  localStorage.setItem('paris_sp_post', JSON.stringify(spareplanPost));
 }
 
 function saveAll() {
@@ -59,81 +63,6 @@ function showTab(name, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
   btn.classList.add('active');
-}
-
-// ── Countdown ────────────────────────────────────────────────
-function buildCountdown() {
-  const now  = new Date();
-  const diff = DEPARTURE_DATE - now;
-  if (diff <= 0) {
-    document.getElementById('cd-days').textContent  = '0';
-    document.getElementById('cd-weeks').textContent = '0';
-    document.getElementById('cd-months').textContent= '0';
-    return;
-  }
-  const days   = Math.floor(diff / 86400000);
-  const weeks  = Math.floor(days / 7);
-  const months = Math.floor(days / 30.44);
-  document.getElementById('cd-days').textContent   = days;
-  document.getElementById('cd-weeks').textContent  = weeks;
-  document.getElementById('cd-months').textContent = months;
-}
-
-// ── Savings tracker ──────────────────────────────────────────
-function buildSavings() {
-  const goal = savings.goal || _savingsGoal;
-  const pct = Math.min(100, Math.round((savings.current / goal) * 100));
-  document.getElementById('savings-current').textContent = savings.current.toLocaleString('nb-NO') + ' kr';
-  document.getElementById('savings-goal-val').textContent = goal.toLocaleString('nb-NO') + ' kr';
-  document.getElementById('savings-pct').textContent = pct + '%';
-  document.getElementById('savings-left').textContent = Math.max(0, goal - savings.current).toLocaleString('nb-NO') + ' kr igjen';
-  document.getElementById('savings-bar-fill').style.width = pct + '%';
-  const glabel = document.getElementById('savings-goal-label');
-  if (glabel) glabel.textContent = goal.toLocaleString('nb-NO') + ' kr';
-
-  // Milestones
-  const step = Math.round(goal / 5);
-  const milestones = [
-    { amount: step*1, label: (step/1000).toFixed(0)+'k', icon: '🌱' },
-    { amount: step*2, label: (step*2/1000).toFixed(0)+'k', icon: '🌸' },
-    { amount: step*3, label: (step*3/1000).toFixed(0)+'k', icon: '🌺' },
-    { amount: step*4, label: (step*4/1000).toFixed(0)+'k', icon: '🦋' },
-    { amount: goal,   label: (goal/1000).toFixed(0)+'k', icon: '🌟' },
-  ];
-  const mc = document.getElementById('milestones');
-  mc.innerHTML = '';
-  milestones.forEach(m => {
-    const reached = savings.current >= m.amount;
-    const el = document.createElement('div');
-    el.className = 'milestone' + (reached ? ' reached' : '');
-    el.innerHTML = `<span class="m-icon">${m.icon}</span>${m.label}${reached ? ' ✓' : ''}`;
-    mc.appendChild(el);
-  });
-}
-
-function addSavings() {
-  const inp = document.getElementById('savings-add-input');
-  const val = parseInt(inp.value);
-  if (!val || val === 0) return;
-  savings.current += val;
-  if (savings.current < 0) savings.current = 0;
-  savings.log.push({ amount: val, date: new Date().toLocaleDateString('nb-NO') });
-  inp.value = '';
-  persist();
-  buildSavings();
-  showToast(val > 0 ? `+${val.toLocaleString('nb-NO')} kr spart! 🎉` : `${val.toLocaleString('nb-NO')} kr registrert 💸`);
-}
-
-function setSavingsGoalEdit() {
-  const inp = document.getElementById('savings-goal-edit');
-  const val = parseInt(inp.value);
-  if (val && val > 0) {
-    // update the global (in-memory only for simplicity)
-    window.SAVINGS_GOAL = val; window.SAVINGS_GOAL_val = val;
-    inp.value = '';
-    buildSavings();
-    showToast('Sparemål oppdatert! 🌟');
-  }
 }
 
 // ── Timeline ─────────────────────────────────────────────────
@@ -383,6 +312,214 @@ function addBudgetRow(si) {
   buildBudget();
 }
 
+// ── Spareplan ─────────────────────────────────────────────────
+function fmt(n) { return Math.round(n || 0).toLocaleString('nb-NO'); }
+
+function buildSpareplan() {
+  const goal    = savings.goal || SAVINGS_GOAL;
+  const current = savings.current || 0;
+  const pct     = Math.min(100, Math.round((current / goal) * 100));
+
+  const now  = new Date();
+  const diff = Math.max(0, DEPARTURE_DATE - now);
+  const cdDays   = Math.floor(diff / 86400000);
+  const cdWeeks  = Math.floor(cdDays / 7);
+  const cdMonths = Math.floor(cdDays / 30.44);
+
+  const step = Math.round(goal / 5);
+  const milestones = [
+    { amount: step*1, label: fmt(step*1),  icon: '🌱' },
+    { amount: step*2, label: fmt(step*2),  icon: '🌸' },
+    { amount: step*3, label: fmt(step*3),  icon: '🌺' },
+    { amount: step*4, label: fmt(step*4),  icon: '🦋' },
+    { amount: goal,   label: fmt(goal),    icon: '🌟' },
+  ];
+
+  let prePlanned = 0, preActual = 0;
+  spareplanPre.forEach(r => { prePlanned += r.planned || 0; preActual += r.actual || 0; });
+
+  let postIncome = 0, postExpenses = 0;
+  spareplanPost.forEach(r => { postIncome += r.income || 0; postExpenses += r.expenses || 0; });
+
+  let estimatedMonth = null;
+  let cum = current;
+  for (const r of spareplanPre) {
+    cum += r.planned || 0;
+    if (cum >= goal) { estimatedMonth = r.month; break; }
+  }
+
+  document.getElementById('spareplan-content').innerHTML = `
+    <div class="sp-countdown">
+      <div class="sp-cd-chip"><div class="sp-cd-num">${cdMonths}</div><div class="sp-cd-lbl">måneder</div></div>
+      <div class="sp-cd-chip"><div class="sp-cd-num">${cdWeeks}</div><div class="sp-cd-lbl">uker</div></div>
+      <div class="sp-cd-chip"><div class="sp-cd-num">${cdDays}</div><div class="sp-cd-lbl">dager</div></div>
+      <span class="sp-cd-label">til avreise ✈️</span>
+    </div>
+
+    <div class="savings-card sp-goal-card">
+      <div class="savings-header">
+        <span style="font-size:24px">🌟</span>
+        <h2>Sparemål til avreise</h2>
+        <span class="pill">1. sep 2026</span>
+      </div>
+      <div class="savings-goal-row">
+        <div class="savings-item pink">
+          <div class="savings-item-label">Spart hittil</div>
+          <div class="savings-item-val">${fmt(current)} kr</div>
+          <div class="savings-item-sub">av målet ditt</div>
+        </div>
+        <div class="savings-item lilac">
+          <div class="savings-item-label">Sparemål</div>
+          <div class="savings-item-val">${fmt(goal)} kr</div>
+          <div class="savings-item-sub">satt av deg</div>
+        </div>
+        <div class="savings-item mint">
+          <div class="savings-item-label">Fremgang</div>
+          <div class="savings-item-val">${pct}%</div>
+          <div class="savings-item-sub">${fmt(Math.max(0, goal - current))} kr igjen</div>
+        </div>
+      </div>
+      <div class="savings-bar-wrap">
+        <div class="savings-bar-labels"><span>0 kr</span><span>${fmt(goal)} kr</span></div>
+        <div class="savings-bar-track"><div class="savings-bar-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="milestones">
+        ${milestones.map(m => `<div class="milestone${current >= m.amount ? ' reached' : ''}"><span class="m-icon">${m.icon}</span>${m.label}${current >= m.amount ? ' ✓' : ''}</div>`).join('')}
+      </div>
+      <div class="savings-input-row">
+        <label>Legg til sparing:</label>
+        <input id="sp-add-input" type="number" placeholder="f.eks. 2500" onkeydown="if(event.key==='Enter')addSparing()" />
+        <button onclick="addSparing()">+ Legg til</button>
+        <label style="margin-left:12px">Endre mål:</label>
+        <input id="sp-goal-edit" type="number" placeholder="f.eks. 30000" onkeydown="if(event.key==='Enter')setSparemaal()" />
+        <button onclick="setSparemaal()">Oppdater</button>
+      </div>
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-header">
+        <div class="sp-section-title">✈️ Før premien</div>
+        <div class="sp-section-sub">Månedlig spareplan frem til avreise</div>
+      </div>
+      <div class="sp-table-wrap">
+        <table class="sp-table">
+          <thead><tr><th>Måned</th><th>Planlagt spart</th><th>Faktisk spart</th><th>Gjenstår</th></tr></thead>
+          <tbody>
+            ${spareplanPre.map((r, i) => {
+              const rem = (r.planned||0) - (r.actual||0);
+              return `<tr>
+                <td>${r.month}</td>
+                <td><input class="sp-input" type="number" value="${r.planned||0}" onchange="updateSparePreRow(${i},'planned',this.value)" /></td>
+                <td><input class="sp-input" type="number" value="${r.actual||0}" onchange="updateSparePreRow(${i},'actual',this.value)" /></td>
+                <td class="${rem<=0?'sp-done':'sp-todo'}">${rem<=0?'✓ Nådd':fmt(rem)+' kr'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot><tr class="sp-total-row">
+            <td>Totalt</td><td>${fmt(prePlanned)} kr</td><td>${fmt(preActual)} kr</td>
+            <td class="${preActual>=prePlanned?'sp-done':'sp-todo'}">${fmt(Math.max(0,prePlanned-preActual))} kr</td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <button class="sp-add-row-btn" onclick="addSparePreRow()">+ Legg til måned</button>
+    </div>
+
+    <div class="sp-section">
+      <div class="sp-section-header">
+        <div class="sp-section-title">🌍 Etter premien</div>
+        <div class="sp-section-sub">Månedlig oversikt under reisen</div>
+      </div>
+      <div class="sp-table-wrap">
+        <table class="sp-table">
+          <thead><tr><th>Måned</th><th>Inntekt inn</th><th>Utgifter ut</th><th>Netto</th></tr></thead>
+          <tbody>
+            ${spareplanPost.map((r, i) => {
+              const net = (r.income||0) - (r.expenses||0);
+              return `<tr>
+                <td>${r.month}</td>
+                <td><input class="sp-input" type="number" value="${r.income||0}" onchange="updateSparePostRow(${i},'income',this.value)" /></td>
+                <td><input class="sp-input" type="number" value="${r.expenses||0}" onchange="updateSparePostRow(${i},'expenses',this.value)" /></td>
+                <td class="${net>=0?'sp-done':'sp-todo'}">${net>=0?'+':''}${fmt(net)} kr</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot><tr class="sp-total-row">
+            <td>Totalt</td><td>${fmt(postIncome)} kr</td><td>${fmt(postExpenses)} kr</td>
+            <td class="${postIncome>=postExpenses?'sp-done':'sp-todo'}">${fmt(postIncome-postExpenses)} kr</td>
+          </tr></tfoot>
+        </table>
+      </div>
+      <button class="sp-add-row-btn" onclick="addSparePostRow()">+ Legg til måned</button>
+    </div>
+
+    <div class="sp-summary">
+      <div class="sp-summary-title">📊 Total oversikt</div>
+      <div class="sp-summary-grid">
+        <div class="sp-summary-item">
+          <div class="sp-summary-label">Totalt spart</div>
+          <div class="sp-summary-val">${fmt(current)} kr</div>
+        </div>
+        <div class="sp-summary-item">
+          <div class="sp-summary-label">Gjenstår til mål</div>
+          <div class="sp-summary-val">${fmt(Math.max(0, goal - current))} kr</div>
+        </div>
+        <div class="sp-summary-item">
+          <div class="sp-summary-label">Estimert nådd</div>
+          <div class="sp-summary-val sp-summary-date">${estimatedMonth ? estimatedMonth : current >= goal ? '🎉 Nådd!' : '—'}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function addSparing() {
+  const inp = document.getElementById('sp-add-input');
+  const val = parseInt(inp.value);
+  if (!val || val === 0) return;
+  savings.current = Math.max(0, savings.current + val);
+  savings.log.push({ amount: val, date: new Date().toLocaleDateString('nb-NO') });
+  inp.value = '';
+  persist();
+  buildSpareplan();
+  showToast(val > 0 ? `+${fmt(val)} kr spart! 🎉` : `${fmt(val)} kr registrert 💸`);
+}
+
+function setSparemaal() {
+  const inp = document.getElementById('sp-goal-edit');
+  const val = parseInt(inp.value);
+  if (val && val > 0) {
+    savings.goal = val;
+    inp.value = '';
+    persist();
+    buildSpareplan();
+    showToast('Sparemål oppdatert! 🌟');
+  }
+}
+
+function updateSparePreRow(i, field, val) {
+  spareplanPre[i][field] = parseInt(val) || 0;
+  persist();
+  buildSpareplan();
+}
+
+function updateSparePostRow(i, field, val) {
+  spareplanPost[i][field] = parseInt(val) || 0;
+  persist();
+  buildSpareplan();
+}
+
+function addSparePreRow() {
+  spareplanPre.push({ month: 'Ny måned', planned: 0, actual: 0 });
+  persist();
+  buildSpareplan();
+}
+
+function addSparePostRow() {
+  spareplanPost.push({ month: 'Ny måned', income: 0, expenses: 0 });
+  persist();
+  buildSpareplan();
+}
+
 // ── Goals ────────────────────────────────────────────────────
 function buildGoals() {
   const list = document.getElementById('goals-list');
@@ -449,12 +586,7 @@ function addGoal() {
 }
 
 // ── Init ─────────────────────────────────────────────────────
-let _savingsGoal = savings.goal || SAVINGS_GOAL;
-buildCountdown();
-buildSavings();
+buildSpareplan();
 buildTimeline();
 buildBudget();
 buildGoals();
-setInterval(buildCountdown, 60000);
-
-function getCurrentSavingsGoal() { return _savingsGoal; }

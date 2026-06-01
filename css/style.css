@@ -660,6 +660,93 @@ tbody td:not(:first-child) { text-align: right; }
 }
 .toast.show { opacity: 1; transform: translateY(0); }
 
+/* ── Spareplan ───────────────────────────────────────────── */
+.sp-countdown {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  background: linear-gradient(135deg, #FDE8F2 0%, #FFF5E0 50%, #E4F7F4 100%);
+  border-radius: var(--radius); padding: 14px 20px; margin-bottom: 20px;
+  border: 1.5px solid var(--border);
+}
+.sp-cd-chip {
+  display: flex; flex-direction: column; align-items: center;
+  background: white; border-radius: var(--radius-sm);
+  padding: 8px 14px; min-width: 54px;
+  box-shadow: var(--shadow); border: 1.5px solid var(--border);
+}
+.sp-cd-num { font-family: 'Playfair Display', serif; font-size: 22px; color: var(--pink); font-weight: 700; line-height: 1.1; }
+.sp-cd-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-muted); font-weight: 700; margin-top: 3px; }
+.sp-cd-label { font-size: 13px; color: var(--text-muted); font-weight: 600; margin-left: 4px; }
+
+.sp-goal-card { margin-bottom: 22px; }
+
+.sp-section {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 20px;
+  box-shadow: var(--shadow);
+}
+.sp-section-header { margin-bottom: 14px; }
+.sp-section-title { font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700; color: var(--text); }
+.sp-section-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+.sp-table-wrap { overflow-x: auto; margin-bottom: 12px; border-radius: var(--radius-sm); border: 1.5px solid var(--border); }
+.sp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.sp-table th {
+  text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-muted); padding: 10px 12px;
+  background: var(--surface2); border-bottom: 2px solid var(--border);
+}
+.sp-table td { padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.sp-table tbody tr:last-child td { border-bottom: none; }
+.sp-table tfoot td {
+  border-top: 2px solid var(--border); border-bottom: none;
+  font-weight: 700; padding: 10px 12px; background: var(--surface2);
+}
+
+.sp-input {
+  width: 100px; padding: 6px 10px; font-size: 13px; font-weight: 600;
+  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+  background: var(--bg); color: var(--text); font-family: 'Nunito', sans-serif;
+  outline: none; transition: border-color 0.2s;
+}
+.sp-input:focus { border-color: var(--pink); }
+
+.sp-done { color: #3DA87A; font-weight: 700; }
+.sp-todo { color: var(--text-muted); }
+
+.sp-add-row-btn {
+  font-size: 12px; padding: 7px 16px; border: 1.5px dashed var(--border);
+  border-radius: var(--radius-pill); background: none; color: var(--text-muted);
+  cursor: pointer; font-family: 'Nunito', sans-serif; font-weight: 600;
+  transition: all 0.18s;
+}
+.sp-add-row-btn:hover { border-color: var(--pink); color: var(--pink); }
+
+.sp-summary {
+  background: linear-gradient(135deg, var(--pink-light), var(--lilac-light));
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  padding: 20px; margin-bottom: 8px;
+}
+.sp-summary-title {
+  font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700;
+  margin-bottom: 14px; color: var(--text);
+}
+.sp-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.sp-summary-item {
+  background: white; border-radius: var(--radius-sm);
+  padding: 14px 16px; border: 1.5px solid var(--border); box-shadow: var(--shadow);
+}
+.sp-summary-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; margin-bottom: 6px; }
+.sp-summary-val { font-family: 'Playfair Display', serif; font-size: 20px; color: var(--text); line-height: 1.2; }
+.sp-summary-date { font-size: 15px; }
+
+@media (max-width: 560px) {
+  .sp-summary-grid { grid-template-columns: 1fr 1fr; }
+  .sp-input { width: 80px; }
+}
+@media (max-width: 380px) {
+  .sp-summary-grid { grid-template-columns: 1fr; }
+}
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 640px) {
   .month-body-inner { grid-template-columns: 1fr; }

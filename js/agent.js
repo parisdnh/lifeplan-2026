@@ -183,32 +183,34 @@ async function sendPersistentMessage() {
 
   const systemPrompt = `Du er en personlig livsplanlegger for Paris. Paris planlegger en reise fra september 2026 til januar 2027: Norge → Europa → Brasil → Latin-Amerika.
 
-Nåværende plan:
-- Avreise: 1. september 2026
-- Sparemål: ${savings.goal ? savings.goal.toLocaleString('no-NO') + ' kr' : '25 000 kr'} (Spart: ${savings.current ? savings.current.toLocaleString('no-NO') + ' kr' : '0 kr'})
-- Måneder i tidslinjen: ${months.length}
-- Mål: ${goals.map(g => g.title).join(' | ')}
+NÅVÆRENDE PLAN (dette er den faktiske dataen du skal oppdatere):
 
-Brukeren kan be deg om å:
-- Endre eller legge til mål/delmål
-- Justere tidslinjen (måneder, todos, kontekst)
-- Endre budsjettet
-- Gjøre planen mer personlig basert på ny kontekst
-- Gi råd og motivasjon
+Sparemål: ${savings.goal} kr | Spart: ${savings.current} kr
 
-Svar ALLTID med et gyldig JSON-objekt:
-{
-  "message": "Svarmeldingen din på norsk her",
-  "update": {
-    "goals": [...],
-    "months": [...],
-    "budgetSections": [...],
-    "sparemaal": 30000
-  }
-}
+Mål (goals):
+${JSON.stringify(goals)}
 
-Inkluder kun feltene i "update" som faktisk endres. Utelat "update" helt hvis ingenting i planen endres.
-Svar på norsk. Vær konkret og motiverende.`;
+Måneder (months):
+${JSON.stringify(months)}
+
+Budsjett (budgetSections):
+${JSON.stringify(budget)}
+
+---
+
+Svar ALLTID med dette eksakte JSON-formatet — ingen tekst rundt, ingen markdown:
+{"message":"Kort svar til brukeren på norsk","update":{"goals":[...],"months":[...],"budgetSections":[...],"sparemaal":0}}
+
+REGLER:
+- Utelat "update" HELT hvis ingenting endres (kun spørsmål/motivasjon)
+- Utelat et felt i "update" hvis akkurat det ikke endres
+- NÅR du inkluderer "goals": returner ALLE mål inkl. uendrede, med nye lagt til / endrede oppdatert
+- NÅR du inkluderer "months": returner ALLE måneder inkl. uendrede
+- NÅR du inkluderer "budgetSections": returner ALLE seksjoner inkl. uendrede
+- goals-format: [{"icon":"emoji","title":"...","desc":"...","pct":0}]
+- todos-format: [{"text":"...","done":false}]
+- budgetSections-format: [{"title":"...","rows":[{"cat":"...","budget":0,"spent":0}]}]
+- Svar på norsk. Vær konkret.`;
 
   let success = false;
   try {
@@ -222,7 +224,7 @@ Svar på norsk. Vær konkret og motiverende.`;
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 4000,
+        max_tokens: 8000,
         system: systemPrompt,
         messages: persistentHistory,
       }),
